@@ -1,0 +1,29 @@
+﻿@model IEnumerable<WhiteLagoon.Domain.Entities.Villa>
+
+<h1>Villa List</h1>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Sqft</th>
+            <th>Occupancy</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if(Model != null)
+        {
+            foreach (var obj in Model)
+            {
+                <tr>
+                    <td>@obj.Name</td>
+                    <td>@obj.Price</td>
+                    <td>@obj.Sqft</td>
+                    <td>@obj.Occupancy</td>
+                </tr>
+            }
+        }
+        
+    </tbody>
+</table>
