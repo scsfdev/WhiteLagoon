@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using WhiteLagoon.Domain.Entities;
 using WhiteLagoon.Infrastructure.Data;
+using WhiteLagoon.Web.ViewModels;
 
 namespace WhiteLagoon.Web.Controllers
 {
@@ -15,93 +17,148 @@ namespace WhiteLagoon.Web.Controllers
             _db = db;
         }
 
-        public IActionResult Index()
+        public IActionResult Index() 
         {
-            var villaNumbers = _db.VillaNumbers.ToList();
+            var villaNumbers = _db.VillaNumbers.Include(v => v.Villa).ToList();
             return View(villaNumbers);
         }
 
         public IActionResult Create()
         {
-            IEnumerable<SelectListItem> list = _db.Villas.ToList().Select(v => new SelectListItem
+            VillaNumberVM villaNumberVM = new()
             {
-                Text = v.Name,
-                Value= v.Id.ToString()
-            });
-            ViewData["VillaList"] = list;
-            return View();
+                VillaList = _db.Villas.ToList().Select(v => new SelectListItem
+                {
+                    Text = v.Name,
+                    Value = v.Id.ToString()
+                })
+            };
+
+            //IEnumerable<SelectListItem> list = _db.Villas.ToList().Select(v => new SelectListItem
+            //{
+            //    Text = v.Name,
+            //    Value= v.Id.ToString()
+            //});
+
+            //ViewData["VillaList"] = list;
+            //ViewBag.VillaNumbers = list;
+
+            return View(villaNumberVM);
         }
 
         [HttpPost]
-        public IActionResult Create(VillaNumber obj) 
+        public IActionResult Create(VillaNumberVM obj) 
         {
             // One way to remove model validation.
             //ModelState.Remove("Villa");
             // The other way is to change from Model (Entities) >> by adding [ValidateNever] tag but need to adjust Project File with ItemGroup --> <FrameworkReference Include="Microsoft.AspNetCore.App" />
 
-            if (ModelState.IsValid)
+            bool villaNumberExists = _db.VillaNumbers.Any( v=> v.Villa_Number == obj.VillaNumber.Villa_Number );
+
+            if (ModelState.IsValid && !villaNumberExists)
             {
-                _db.VillaNumbers.Add(obj);
+                _db.VillaNumbers.Add(obj.VillaNumber);
                 _db.SaveChanges();
 
                 TempData["success"] = "The villa number has been created successfully.";
                 return RedirectToAction("Index", "VillaNumber");
             }
-            return View();
-        }
 
-
-        public IActionResult Update(int villaId)
-        {
-            Villa? obj = _db.Villas.FirstOrDefault(v => v.Id == villaId);
-
-            if(obj is null)
+            if (villaNumberExists)
             {
-                return RedirectToAction("Error", "Home");
+                TempData["error"] = "Villa Number already exist!";
             }
+
+            obj.VillaList = _db.Villas.ToList().Select(v => new SelectListItem
+            {
+                Text = v.Name,
+                Value = v.Id.ToString()
+            });
 
             return View(obj);
         }
 
 
+        public IActionResult Update(int villaNumberId)
+        {
+            VillaNumberVM villaNumberVM = new()
+            {
+                VillaList = _db.Villas.ToList().Select(v => new SelectListItem
+                {
+                    Text = v.Name,
+                    Value = v.Id.ToString()
+                }),
+                VillaNumber = _db.VillaNumbers.FirstOrDefault(v => v.Villa_Number == villaNumberId),
+            };
+
+
+
+            if (villaNumberVM.VillaNumber is null)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+
+            return View(villaNumberVM);
+        }
+
+
         [HttpPost]
-        public IActionResult Update(Villa obj)
+        public IActionResult Update(VillaNumberVM villaNumberVM)
         {
             if (ModelState.IsValid)
             {
-                _db.Villas.Update(obj);
+                _db.VillaNumbers.Update(villaNumberVM.VillaNumber);
                 _db.SaveChanges();
 
                 TempData["success"] = "The villa number has been updated successfully.";
-                return RedirectToAction("Index", "VillaNumber");
+                return RedirectToAction(nameof(Index), "VillaNumber");
             }
-            return View();
+
+           
+            villaNumberVM.VillaList = _db.Villas.ToList().Select(v => new SelectListItem
+            {
+                Text = v.Name,
+                Value = v.Id.ToString()
+            });
+
+            return View(villaNumberVM);
         }
 
 
-        public IActionResult Delete(int villaId)
+        public IActionResult Delete(int villaNumberId)
         {
-            Villa? obj = _db.Villas.FirstOrDefault(v => v.Id == villaId);
-            if (obj is null)
+            VillaNumberVM villaNumberVM = new()
+            {
+                VillaList = _db.Villas.ToList().Select(v => new SelectListItem
+                {
+                    Text = v.Name,
+                    Value = v.Id.ToString()
+                }),
+                VillaNumber = _db.VillaNumbers.FirstOrDefault(v => v.Villa_Number == villaNumberId),
+            };
+
+
+
+            if (villaNumberVM.VillaNumber is null)
             {
                 return RedirectToAction("Error", "Home");
             }
 
-            return View(obj);
+            return View(villaNumberVM);
         }
 
 
         [HttpPost]
-        public IActionResult Delete(Villa obj)
+        public IActionResult Delete(VillaNumberVM villaNumberVM)
         {
-            Villa? objFromDb = _db.Villas.FirstOrDefault(v => v.Id == obj.Id);
+            VillaNumber? objFromDb = _db.VillaNumbers.FirstOrDefault(v => v.Villa_Number == villaNumberVM.VillaNumber.Villa_Number);
             if (objFromDb is not null)
             {
-                _db.Villas.Remove(objFromDb);
+                _db.VillaNumbers.Remove(objFromDb);
                 _db.SaveChanges();
 
                 TempData["success"] = "The villa number has been deleted successfully.";
-                return RedirectToAction("Index", "VillaNumber");
+                return RedirectToAction(nameof(Index), "VillaNumber");
             }
             TempData["error"] = "The villa number could not be deleted.";
             return View();
