@@ -39,7 +39,14 @@ namespace WhiteLagoon.Web.Controllers
             {
                 if(obj.Image != null)
                 {
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(obj.Image.FileName) ;
+                    string imagePath = Path.Combine(_webHostEnvironment.WebRootPath, @"images\VillaImage") ;
+                    using (var fileStream = new FileStream(Path.Combine(imagePath, fileName), FileMode.Create))
+                    {
+                        obj.Image.CopyTo(fileStream);
+                    }
 
+                    obj.ImageUrl = @"\images\VillaImage\" + fileName;
                 }
                 else
                 {
@@ -77,8 +84,31 @@ namespace WhiteLagoon.Web.Controllers
         [HttpPost]
         public IActionResult Update(Villa obj)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && obj.Id > 0 )
             {
+                if (obj.Image != null)
+                {
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(obj.Image.FileName);
+                    string imagePath = Path.Combine(_webHostEnvironment.WebRootPath, @"images\VillaImage");
+
+                    if (!string.IsNullOrEmpty(obj.ImageUrl))
+                    {
+                        var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, obj.ImageUrl.TrimStart('\\'));
+
+                        if (System.IO.File.Exists(oldImagePath))
+                            System.IO.File.Delete(oldImagePath);
+                    }
+
+
+                    using (var fileStream = new FileStream(Path.Combine(imagePath, fileName), FileMode.Create))
+                    {
+                        obj.Image.CopyTo(fileStream);
+                    }
+
+                    obj.ImageUrl = @"\images\VillaImage\" + fileName;
+                }
+                
+
                 _unitOfWork.Villa.Update(obj);
                 _unitOfWork.Save();
 
@@ -107,6 +137,14 @@ namespace WhiteLagoon.Web.Controllers
             Villa? objFromDb = _unitOfWork.Villa.Get(v => v.Id == obj.Id);
             if (objFromDb is not null)
             {
+                if (!string.IsNullOrEmpty(objFromDb.ImageUrl))
+                {
+                    var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, objFromDb.ImageUrl.TrimStart('\\'));
+
+                    if (System.IO.File.Exists(oldImagePath))
+                        System.IO.File.Delete(oldImagePath);
+                }
+
                 _unitOfWork.Villa.Remove(objFromDb);
                 _unitOfWork.Save();
 
