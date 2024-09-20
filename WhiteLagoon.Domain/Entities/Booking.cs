@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authorization;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace WhiteLagoon.Domain.Entities
 {
+    
     public class Booking
     {
         [Key]
@@ -35,7 +37,7 @@ namespace WhiteLagoon.Domain.Entities
         public string? Phone { get; set; }
 
         [Required]
-        public string TotalCost { get; set; }
+        public double TotalCost { get; set; }
         public int Nights { get; set; }
 
         public string? Status { get; set; }

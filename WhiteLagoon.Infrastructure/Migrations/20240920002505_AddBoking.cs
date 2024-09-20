@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace WhiteLagoon.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class addBookingDb : Migration
+    public partial class AddBoking : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,7 @@ namespace WhiteLagoon.Infrastructure.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    TotalCost = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TotalCost = table.Column<double>(type: "float", nullable: false),
                     Nights = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     BookingDate = table.Column<DateTime>(type: "datetime2", nullable: false),

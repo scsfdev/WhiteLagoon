@@ -372,9 +372,8 @@ namespace WhiteLagoon.Infrastructure.Migrations
                     b.Property<string>("StripeSessionId")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TotalCost")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<double>("TotalCost")
+                        .HasColumnType("float");
 
                     b.Property<string>("UserId")
                         .IsRequired()
