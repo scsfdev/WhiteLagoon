@@ -24,6 +24,13 @@ namespace WhiteLagoon.Web.Controllers
             return View();
         }
 
+        [Authorize]
+        public IActionResult BookingDetails(int bookingId)
+        {
+            Booking bookingFromDb = _unitOfWork.Booking.Get(u => u.Id == bookingId, includeProperties: "User,Villa");
+
+            return View(bookingFromDb);
+        }
 
         [Authorize]
         public IActionResult FinalizeBooking(int villaId, DateTime checkInDate, int nights)
@@ -131,7 +138,7 @@ namespace WhiteLagoon.Web.Controllers
 
         [HttpGet]
         [Authorize]
-        public IActionResult Getall()
+        public IActionResult Getall(string status)
         {
             IEnumerable<Booking> objBookings;
 
@@ -145,6 +152,11 @@ namespace WhiteLagoon.Web.Controllers
                 var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
 
                 objBookings = _unitOfWork.Booking.GetAll( u => u.UserId == userId, includeProperties: "User,Villa" );
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                objBookings = objBookings.Where(x => x.Status.ToLower().Equals(status.ToLower()));
             }
 
             return Json(new {data = objBookings });
