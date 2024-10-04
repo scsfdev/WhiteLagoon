@@ -29,8 +29,38 @@ namespace WhiteLagoon.Web.Controllers
         {
             Booking bookingFromDb = _unitOfWork.Booking.Get(u => u.Id == bookingId, includeProperties: "User,Villa");
 
+
+            if(bookingFromDb.VillaNumber == 0 && bookingFromDb.Status == SD.StatusApproved)
+            {
+                var availableNumbers = AssignAvailableVillaNumberByVilla(bookingFromDb.VillaId);
+
+                bookingFromDb.VillaNumbers = _unitOfWork.VillaNumber.GetAll(u => u.VillaId == bookingFromDb.VillaId 
+                && availableNumbers.Any(x => x == u.Villa_Number)).ToList();
+            }
+
             return View(bookingFromDb);
         }
+
+
+        private List<int> AssignAvailableVillaNumberByVilla(int villaId)
+        {
+            List<int> availableVillaNumbers = new List<int>();
+
+            var villaNumbers = _unitOfWork.VillaNumber.GetAll(u=> u.VillaId == villaId);
+
+            var checkedInVilla = _unitOfWork.Booking.GetAll(u=>u.VillaId ==villaId && u.Status == SD.StatusCheckedIn).Select(u=>u.VillaNumber);
+
+            foreach (var villaNo in villaNumbers)
+            {
+                if (!checkedInVilla.Contains(villaNo.Villa_Number))
+                {
+                    availableVillaNumbers.Add(villaNo.Villa_Number);
+                }
+            }
+
+            return availableVillaNumbers;
+        }
+
 
         [Authorize]
         public IActionResult FinalizeBooking(int villaId, DateTime checkInDate, int nights)
@@ -125,7 +155,7 @@ namespace WhiteLagoon.Web.Controllers
                 if(session.PaymentStatus == "paid")
                 {
                     // We need to store PaymentId is in case there is a refund, we can use this ID to retrieve back the info and do the refund.
-                    _unitOfWork.Booking.UpdateStatus(bookingFromDb.Id, SD.StatusApproved);
+                    _unitOfWork.Booking.UpdateStatus(bookingFromDb.Id, SD.StatusApproved, 0);
                     _unitOfWork.Booking.UpdateStripePaymentID(bookingFromDb.Id, session.Id, session.PaymentIntentId);
                     _unitOfWork.Save();
                 }
