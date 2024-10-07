@@ -27,15 +27,24 @@ namespace WhiteLagoon.Web.Controllers
         [Authorize]
         public IActionResult BookingDetails(int bookingId)
         {
-            Booking bookingFromDb = _unitOfWork.Booking.Get(u => u.Id == bookingId, includeProperties: "User,Villa");
+            Booking bookingFromDb = _unitOfWork.Booking.Get(u => u.Id == bookingId, 
+                includeProperties: "User,Villa");
 
 
             if(bookingFromDb.VillaNumber == 0 && bookingFromDb.Status == SD.StatusApproved)
             {
-                var availableNumbers = AssignAvailableVillaNumberByVilla(bookingFromDb.VillaId);
+                var availableVillaNumber = AssignAvailableVillaNumberByVilla(bookingFromDb.VillaId);
 
-                bookingFromDb.VillaNumbers = _unitOfWork.VillaNumber.GetAll(u => u.VillaId == bookingFromDb.VillaId 
-                && availableNumbers.Any(x => x == u.Villa_Number)).ToList();
+                //bookingFromDb.VillaNumbers = _unitOfWork.VillaNumber.GetAll(u => u.VillaId == bookingFromDb.VillaId 
+                //&& availableVillaNumbers.Any(x => x == u.Villa_Number)).ToList();
+
+                // If I removed && xxxxxxx condition, it can return the list.
+                var tmp = _unitOfWork.VillaNumber.GetAll(u => u.VillaId == bookingFromDb.VillaId).ToList();
+
+                // I cal add && xxx condition, it will throw error -> Microsoft.Data.SqlClient.SqlException: 'Incorrect syntax near the keyword 'WITH'.
+                bookingFromDb.VillaNumbers = _unitOfWork.VillaNumber.GetAll(u => u.VillaId == bookingFromDb.VillaId
+                && availableVillaNumber.Any(x => x == u.Villa_Number)).ToList();
+
             }
 
             return View(bookingFromDb);
@@ -44,20 +53,17 @@ namespace WhiteLagoon.Web.Controllers
 
         private List<int> AssignAvailableVillaNumberByVilla(int villaId)
         {
-            List<int> availableVillaNumbers = new List<int>();
-
-            var villaNumbers = _unitOfWork.VillaNumber.GetAll(u=> u.VillaId == villaId);
-
-            var checkedInVilla = _unitOfWork.Booking.GetAll(u=>u.VillaId ==villaId && u.Status == SD.StatusCheckedIn).Select(u=>u.VillaNumber);
-
-            foreach (var villaNo in villaNumbers)
+            List<int> availableVillaNumbers = new();
+            var villaNumbers = _unitOfWork.VillaNumber.GetAll(u => u.VillaId == villaId);
+            var checkedInVilla = _unitOfWork.Booking.GetAll(u => u.VillaId == villaId && u.Status == SD.StatusCheckedIn)
+                .Select(u => u.VillaNumber);
+            foreach (var villaNumber in villaNumbers)
             {
-                if (!checkedInVilla.Contains(villaNo.Villa_Number))
+                if (!checkedInVilla.Contains(villaNumber.Villa_Number))
                 {
-                    availableVillaNumbers.Add(villaNo.Villa_Number);
+                    availableVillaNumbers.Add(villaNumber.Villa_Number);
                 }
             }
-
             return availableVillaNumbers;
         }
 
@@ -172,8 +178,8 @@ namespace WhiteLagoon.Web.Controllers
         {
             IEnumerable<Booking> objBookings;
 
-            if(User.IsInRole(SD.Role_Admin)) 
-            { 
+            if (User.IsInRole(SD.Role_Admin))
+            {
                 objBookings = _unitOfWork.Booking.GetAll(includeProperties: "User,Villa");
             }
             else
@@ -181,15 +187,14 @@ namespace WhiteLagoon.Web.Controllers
                 var claimsIdentity = (ClaimsIdentity)User.Identity;
                 var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-                objBookings = _unitOfWork.Booking.GetAll( u => u.UserId == userId, includeProperties: "User,Villa" );
+                objBookings = _unitOfWork.Booking
+                    .GetAll(u => u.UserId == userId, includeProperties: "User,Villa");
             }
-
             if (!string.IsNullOrEmpty(status))
             {
-                objBookings = objBookings.Where(x => x.Status.ToLower().Equals(status.ToLower()));
+                objBookings = objBookings.Where(u => u.Status.ToLower().Equals(status.ToLower()));
             }
-
-            return Json(new {data = objBookings });
+            return Json(new { data = objBookings });
         }
 
         #endregion
